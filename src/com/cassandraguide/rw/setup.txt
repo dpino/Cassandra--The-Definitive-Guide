@@ -1,0 +1,10 @@
+
+[default@Keyspace1] set Standard1['k1']['a']='1'
+Value inserted.
+[default@Keyspace1] set Standard1['k1']['b']='2'
+Value inserted.
+[default@Keyspace1] set Standard1['k1']['c']='3'
+Value inserted.
+[default@Keyspace1] set Standard1['k2']['a']='2.1'
+Value inserted.
+[default@Keyspace1] set Standard1['k2']['b']='2.2'
