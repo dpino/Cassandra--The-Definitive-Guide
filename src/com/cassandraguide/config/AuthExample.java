@@ -12,6 +12,15 @@ import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
 
 /**
+ * NOTE: Create keyspace "Keyspace1" before running AuthExample
+ *
+ * [default@unknown] create keyspace Keyspace1;
+ *
+ * FIXME: Example shows no results, as credentials subsystem has changed since
+ * version 0.7
+ */
+
+/**
  * How to connect if you've set up SimpleAuthenticator
  */
 public class AuthExample {
@@ -32,8 +41,7 @@ public class AuthExample {
 
         client.set_keyspace("Keyspace1");
 
-        AccessLevel access = client.login(authRequest);
-        System.out.println("ACCESS LEVEL: " + access);
+        client.login(authRequest);
         tr.close();
     }
 }

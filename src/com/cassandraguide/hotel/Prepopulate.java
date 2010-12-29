@@ -6,8 +6,10 @@ import static com.cassandraguide.hotel.Constants.CLARION_NAME;
 import static com.cassandraguide.hotel.Constants.UTF8;
 import static com.cassandraguide.hotel.Constants.WALDORF_NAME;
 import static com.cassandraguide.hotel.Constants.W_NAME;
+import static org.apache.cassandra.utils.ByteBufferUtil.bytes;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -72,10 +74,9 @@ public class Prepopulate {
     private void insertByCityIndex(String rowKey, String hotelName)
             throws Exception {
 
-        Clock clock = new Clock(System.nanoTime());
+        long timestamp = System.nanoTime();
 
-        Column nameCol = new Column(hotelName.getBytes(UTF8), new byte[0],
-                clock);
+        Column nameCol = new Column(bytes(hotelName), bytes(""), timestamp);
 
         ColumnOrSuperColumn nameCosc = new ColumnOrSuperColumn();
         nameCosc.column = nameCol;
@@ -103,9 +104,9 @@ public class Prepopulate {
 
         ColumnParent parent = new ColumnParent(columnFamily);
         // here, the column name IS the value (there's no value)
-        Column col = new Column(hotelName.getBytes(UTF8), new byte[0], clock);
+        Column col = new Column(bytes(hotelName), bytes(""), timestamp);
 
-        client.insert(rowKey.getBytes(), parent, col, CL);
+        client.insert(bytes(rowKey), parent, col, CL);
 
         LOG.debug("Inserted HotelByCity index for " + hotelName);
 
@@ -125,16 +126,15 @@ public class Prepopulate {
     }
 
     private void insertPOISpringTraining() throws Exception {
-        // Map<byte[],Map<String,List<Mutation>>>
-        Map<byte[], Map<String, List<Mutation>>> outerMap = new HashMap<byte[], Map<String, List<Mutation>>>();
+        Map<ByteBuffer, Map<String, List<Mutation>>> outerMap = new HashMap<ByteBuffer, Map<String, List<Mutation>>>();
         List<Mutation> columnsToAdd = new ArrayList<Mutation>();
 
-        Clock clock = new Clock(System.nanoTime());
+        long timestamp = System.nanoTime();
         String keyName = "Spring Training";
-        Column descCol = new Column("desc".getBytes(UTF8),
-                "Fun for baseball fans.".getBytes("UTF-8"), clock);
-        Column phoneCol = new Column("phone".getBytes(UTF8),
-                "623-333-3333".getBytes(UTF8), clock);
+        Column descCol = new Column(bytes("desc"),
+                bytes("Fun for baseball fans."), timestamp);
+        Column phoneCol = new Column(bytes("phone"), bytes("623-333-3333"),
+                timestamp);
 
         List<Column> cols = new ArrayList<Column>();
         cols.add(descCol);
@@ -145,7 +145,7 @@ public class Prepopulate {
         Mutation columns = new Mutation();
         ColumnOrSuperColumn descCosc = new ColumnOrSuperColumn();
         SuperColumn sc = new SuperColumn();
-        sc.name = CAMBRIA_NAME.getBytes();
+        sc.name = bytes(CAMBRIA_NAME);
         sc.columns = cols;
 
         descCosc.super_column = sc;
@@ -160,7 +160,7 @@ public class Prepopulate {
         cp.setSuper_columnIsSet(true);
 
         innerMap.put(superCFName, columnsToAdd);
-        outerMap.put(keyName.getBytes(), innerMap);
+        outerMap.put(bytes(keyName), innerMap);
 
         client.batch_mutate(outerMap, CL);
 
@@ -169,16 +169,15 @@ public class Prepopulate {
 
     private void insertPOIPhoenixZoo() throws Exception {
 
-        Map<byte[], Map<String, List<Mutation>>> outerMap = new HashMap<byte[], Map<String, List<Mutation>>>();
+        Map<ByteBuffer, Map<String, List<Mutation>>> outerMap = new HashMap<ByteBuffer, Map<String, List<Mutation>>>();
         List<Mutation> columnsToAdd = new ArrayList<Mutation>();
 
         long ts = System.currentTimeMillis();
         String keyName = "Phoenix Zoo";
-        Column descCol = new Column("desc".getBytes(UTF8),
-                "They have animals here.".getBytes("UTF-8"), new Clock(ts));
+        Column descCol = new Column(bytes("desc"),
+                bytes("They have animals here."), ts);
 
-        Column phoneCol = new Column("phone".getBytes(UTF8),
-                "480-555-9999".getBytes(UTF8), new Clock(ts));
+        Column phoneCol = new Column(bytes("phone"), bytes("480-555-9999"), ts);
 
         List<Column> cols = new ArrayList<Column>();
         cols.add(descCol);
@@ -191,7 +190,7 @@ public class Prepopulate {
         Mutation columns = new Mutation();
         ColumnOrSuperColumn descCosc = new ColumnOrSuperColumn();
         SuperColumn sc = new SuperColumn();
-        sc.name = cambriaName.getBytes();
+        sc.name = bytes(cambriaName);
         sc.columns = cols;
 
         descCosc.super_column = sc;
@@ -206,7 +205,7 @@ public class Prepopulate {
         cp.setSuper_columnIsSet(true);
 
         innerMap.put(superCFName, columnsToAdd);
-        outerMap.put(keyName.getBytes(), innerMap);
+        outerMap.put(bytes(keyName), innerMap);
 
         client.batch_mutate(outerMap, CL);
 
@@ -215,14 +214,13 @@ public class Prepopulate {
 
     private void insertPOICentralPark() throws Exception {
 
-        Map<byte[], Map<String, List<Mutation>>> outerMap = new HashMap<byte[], Map<String, List<Mutation>>>();
+        Map<ByteBuffer, Map<String, List<Mutation>>> outerMap = new HashMap<ByteBuffer, Map<String, List<Mutation>>>();
         List<Mutation> columnsToAdd = new ArrayList<Mutation>();
 
-        Clock clock = new Clock(System.nanoTime());
+        long ts = System.nanoTime();
         String keyName = "Central Park";
-        Column descCol = new Column("desc".getBytes(UTF8),
-                "Walk around in the park. It's pretty.".getBytes("UTF-8"),
-                clock);
+        Column descCol = new Column(bytes("desc"),
+                bytes("Walk around in the park. It's pretty."), ts);
 
         // no phone column for park
 
@@ -234,7 +232,7 @@ public class Prepopulate {
         Mutation columns = new Mutation();
         ColumnOrSuperColumn descCosc = new ColumnOrSuperColumn();
         SuperColumn waldorfSC = new SuperColumn();
-        waldorfSC.name = WALDORF_NAME.getBytes();
+        waldorfSC.name = bytes(WALDORF_NAME);
         waldorfSC.columns = cols;
 
         descCosc.super_column = waldorfSC;
@@ -249,7 +247,7 @@ public class Prepopulate {
         cp.setSuper_columnIsSet(true);
 
         innerMap.put(superCFName, columnsToAdd);
-        outerMap.put(keyName.getBytes(), innerMap);
+        outerMap.put(bytes(keyName), innerMap);
 
         client.batch_mutate(outerMap, CL);
 
@@ -258,16 +256,15 @@ public class Prepopulate {
 
     private void insertPOIEmpireState() throws Exception {
 
-        Map<byte[], Map<String, List<Mutation>>> outerMap = new HashMap<byte[], Map<String, List<Mutation>>>();
+        Map<ByteBuffer, Map<String, List<Mutation>>> outerMap = new HashMap<ByteBuffer, Map<String, List<Mutation>>>();
 
         List<Mutation> columnsToAdd = new ArrayList<Mutation>();
 
-        Clock clock = new Clock(System.nanoTime());
+        long ts = System.nanoTime();
         String esbName = "Empire State Building";
-        Column descCol = new Column("desc".getBytes(UTF8),
-                "Great view from 102nd floor.".getBytes("UTF-8"), clock);
-        Column phoneCol = new Column("phone".getBytes(UTF8),
-                "212-777-7777".getBytes(UTF8), clock);
+        Column descCol = new Column(bytes("desc"),
+                bytes("Great view from 102nd floor."), ts);
+        Column phoneCol = new Column(bytes("phone"), bytes("212-777-7777"), ts);
 
         List<Column> esbCols = new ArrayList<Column>();
         esbCols.add(descCol);
@@ -278,7 +275,7 @@ public class Prepopulate {
         Mutation columns = new Mutation();
         ColumnOrSuperColumn descCosc = new ColumnOrSuperColumn();
         SuperColumn waldorfSC = new SuperColumn();
-        waldorfSC.name = WALDORF_NAME.getBytes();
+        waldorfSC.name = bytes(WALDORF_NAME);
         waldorfSC.columns = esbCols;
 
         descCosc.super_column = waldorfSC;
@@ -293,7 +290,7 @@ public class Prepopulate {
         cp.setSuper_columnIsSet(true);
 
         innerMap.put(superCFName, columnsToAdd);
-        outerMap.put(esbName.getBytes(), innerMap);
+        outerMap.put(bytes(esbName), innerMap);
 
         client.batch_mutate(outerMap, CL);
 
@@ -312,16 +309,16 @@ public class Prepopulate {
         String waldorfKey = "NYN_042";
 
         // conveniences
-        Map<byte[], Map<String, List<Mutation>>> cambriaMutationMap = createCambriaMutation(
+        Map<ByteBuffer, Map<String, List<Mutation>>> cambriaMutationMap = createCambriaMutation(
                 columnFamily, cambriaKey);
 
-        Map<byte[], Map<String, List<Mutation>>> clarionMutationMap = createClarionMutation(
+        Map<ByteBuffer, Map<String, List<Mutation>>> clarionMutationMap = createClarionMutation(
                 columnFamily, clarionKey);
 
-        Map<byte[], Map<String, List<Mutation>>> waldorfMutationMap = createWaldorfMutation(
+        Map<ByteBuffer, Map<String, List<Mutation>>> waldorfMutationMap = createWaldorfMutation(
                 columnFamily, waldorfKey);
 
-        Map<byte[], Map<String, List<Mutation>>> wMutationMap = createWMutation(
+        Map<ByteBuffer, Map<String, List<Mutation>>> wMutationMap = createWMutation(
                 columnFamily, wKey);
 
         client.batch_mutate(cambriaMutationMap, CL);
@@ -337,24 +334,19 @@ public class Prepopulate {
     }
 
     // set up columns to insert for W
-    private Map<byte[], Map<String, List<Mutation>>> createWMutation(
+    private Map<ByteBuffer, Map<String, List<Mutation>>> createWMutation(
             String columnFamily, String rowKey)
             throws UnsupportedEncodingException {
 
-        Clock clock = new Clock(System.nanoTime());
+        long ts = System.nanoTime();
 
-        Column nameCol = new Column("name".getBytes(UTF8),
-                W_NAME.getBytes("UTF-8"), clock);
-        Column phoneCol = new Column("phone".getBytes(UTF8),
-                "415-222-2222".getBytes(UTF8), clock);
-        Column addressCol = new Column("address".getBytes(UTF8),
-                "181 3rd Street".getBytes(UTF8), clock);
-        Column cityCol = new Column("city".getBytes(UTF8),
-                "San Francisco".getBytes(UTF8), clock);
-        Column stateCol = new Column("state".getBytes(UTF8),
-                "CA".getBytes("UTF-8"), clock);
-        Column zipCol = new Column("zip".getBytes(UTF8),
-                "94103".getBytes(UTF8), clock);
+        Column nameCol = new Column(bytes("name"), bytes(W_NAME), ts);
+        Column phoneCol = new Column(bytes("phone"), bytes("415-222-2222"), ts);
+        Column addressCol = new Column(bytes("address"),
+                bytes("181 3rd Street"), ts);
+        Column cityCol = new Column(bytes("city"), bytes("San Francisco"), ts);
+        Column stateCol = new Column(bytes("state"), bytes("CA"), ts);
+        Column zipCol = new Column(bytes("zip"), bytes("94103"), ts);
 
         ColumnOrSuperColumn nameCosc = new ColumnOrSuperColumn();
         nameCosc.column = nameCol;
@@ -388,7 +380,7 @@ public class Prepopulate {
         zipMut.column_or_supercolumn = zipCosc;
 
         // set up the batch
-        Map<byte[], Map<String, List<Mutation>>> mutationMap = new HashMap<byte[], Map<String, List<Mutation>>>();
+        Map<ByteBuffer, Map<String, List<Mutation>>> mutationMap = new HashMap<ByteBuffer, Map<String, List<Mutation>>>();
 
         Map<String, List<Mutation>> muts = new HashMap<String, List<Mutation>>();
         List<Mutation> cols = new ArrayList<Mutation>();
@@ -403,29 +395,24 @@ public class Prepopulate {
 
         // outer map key is a row key
         // inner map key is the column family name
-        mutationMap.put(rowKey.getBytes(), muts);
+        mutationMap.put(bytes(rowKey), muts);
         return mutationMap;
     }
 
     // add Waldorf hotel to Hotel CF
-    private Map<byte[], Map<String, List<Mutation>>> createWaldorfMutation(
+    private Map<ByteBuffer, Map<String, List<Mutation>>> createWaldorfMutation(
             String columnFamily, String rowKey)
             throws UnsupportedEncodingException {
 
-        Clock clock = new Clock(System.nanoTime());
+        long ts = System.nanoTime();
 
-        Column nameCol = new Column("name".getBytes(UTF8),
-                WALDORF_NAME.getBytes("UTF-8"), clock);
-        Column phoneCol = new Column("phone".getBytes(UTF8),
-                "212-555-5555".getBytes(UTF8), clock);
-        Column addressCol = new Column("address".getBytes(UTF8),
-                "301 Park Ave".getBytes(UTF8), clock);
-        Column cityCol = new Column("city".getBytes(UTF8),
-                "New York".getBytes(UTF8), clock);
-        Column stateCol = new Column("state".getBytes(UTF8),
-                "NY".getBytes("UTF-8"), clock);
-        Column zipCol = new Column("zip".getBytes(UTF8),
-                "10019".getBytes(UTF8), clock);
+        Column nameCol = new Column(bytes("name"), bytes(WALDORF_NAME), ts);
+        Column phoneCol = new Column(bytes("phone"), bytes("212-555-5555"), ts);
+        Column addressCol = new Column(bytes("address"), bytes("301 Park Ave"),
+                ts);
+        Column cityCol = new Column(bytes("city"), bytes("New York"), ts);
+        Column stateCol = new Column(bytes("state"), bytes("NY"), ts);
+        Column zipCol = new Column(bytes("zip"), bytes("10019"), ts);
 
         ColumnOrSuperColumn nameCosc = new ColumnOrSuperColumn();
         nameCosc.column = nameCol;
@@ -459,7 +446,7 @@ public class Prepopulate {
         zipMut.column_or_supercolumn = zipCosc;
 
         // set up the batch
-        Map<byte[], Map<String, List<Mutation>>> mutationMap = new HashMap<byte[], Map<String, List<Mutation>>>();
+        Map<ByteBuffer, Map<String, List<Mutation>>> mutationMap = new HashMap<ByteBuffer, Map<String, List<Mutation>>>();
 
         Map<String, List<Mutation>> muts = new HashMap<String, List<Mutation>>();
         List<Mutation> cols = new ArrayList<Mutation>();
@@ -474,29 +461,24 @@ public class Prepopulate {
 
         // outer map key is a row key
         // inner map key is the column family name
-        mutationMap.put(rowKey.getBytes(), muts);
+        mutationMap.put(bytes(rowKey), muts);
         return mutationMap;
     }
 
     // set up columns to insert for Clarion
-    private Map<byte[], Map<String, List<Mutation>>> createClarionMutation(
+    private Map<ByteBuffer, Map<String, List<Mutation>>> createClarionMutation(
             String columnFamily, String rowKey)
             throws UnsupportedEncodingException {
 
-        Clock clock = new Clock(System.nanoTime());
+        long ts = System.nanoTime();
 
-        Column nameCol = new Column("name".getBytes(UTF8),
-                CLARION_NAME.getBytes("UTF-8"), clock);
-        Column phoneCol = new Column("phone".getBytes(UTF8),
-                "480-333-3333".getBytes(UTF8), clock);
-        Column addressCol = new Column("address".getBytes(UTF8),
-                "3000 N. Scottsdale Rd".getBytes(UTF8), clock);
-        Column cityCol = new Column("city".getBytes(UTF8),
-                "Scottsdale".getBytes(UTF8), clock);
-        Column stateCol = new Column("state".getBytes(UTF8),
-                "AZ".getBytes("UTF-8"), clock);
-        Column zipCol = new Column("zip".getBytes(UTF8),
-                "85255".getBytes(UTF8), clock);
+        Column nameCol = new Column(bytes("name"), bytes(CLARION_NAME), ts);
+        Column phoneCol = new Column(bytes("phone"), bytes("480-333-3333"), ts);
+        Column addressCol = new Column(bytes("address"),
+                bytes("3000 N. Scottsdale Rd"), ts);
+        Column cityCol = new Column(bytes("city"), bytes("Scottsdale"), ts);
+        Column stateCol = new Column(bytes("state"), bytes("AZ"), ts);
+        Column zipCol = new Column(bytes("zip"), bytes("85255"), ts);
 
         ColumnOrSuperColumn nameCosc = new ColumnOrSuperColumn();
         nameCosc.column = nameCol;
@@ -530,7 +512,7 @@ public class Prepopulate {
         zipMut.column_or_supercolumn = zipCosc;
 
         // set up the batch
-        Map<byte[], Map<String, List<Mutation>>> mutationMap = new HashMap<byte[], Map<String, List<Mutation>>>();
+        Map<ByteBuffer, Map<String, List<Mutation>>> mutationMap = new HashMap<ByteBuffer, Map<String, List<Mutation>>>();
 
         Map<String, List<Mutation>> muts = new HashMap<String, List<Mutation>>();
         List<Mutation> cols = new ArrayList<Mutation>();
@@ -545,30 +527,28 @@ public class Prepopulate {
 
         // outer map key is a row key
         // inner map key is the column family name
-        mutationMap.put(rowKey.getBytes(), muts);
+        mutationMap.put(bytes(rowKey), muts);
         return mutationMap;
     }
 
     // set up columns to insert for Cambria
-    private Map<byte[], Map<String, List<Mutation>>> createCambriaMutation(
+    private Map<ByteBuffer, Map<String, List<Mutation>>> createCambriaMutation(
             String columnFamily, String cambriaKey)
             throws UnsupportedEncodingException {
 
         // set up columns for Cambria
-        Clock clock = new Clock(System.nanoTime());
+        long ts = System.nanoTime();
 
-        Column cambriaNameCol = new Column("name".getBytes(UTF8),
-                "Cambria Suites Hayden".getBytes("UTF-8"), clock);
-        Column cambriaPhoneCol = new Column("phone".getBytes(UTF8),
-                "480-444-4444".getBytes(UTF8), clock);
-        Column cambriaAddressCol = new Column("address".getBytes(UTF8),
-                "400 N. Hayden".getBytes(UTF8), clock);
-        Column cambriaCityCol = new Column("city".getBytes(UTF8),
-                "Scottsdale".getBytes(UTF8), clock);
-        Column cambriaStateCol = new Column("state".getBytes(UTF8),
-                "AZ".getBytes("UTF-8"), clock);
-        Column cambriaZipCol = new Column("zip".getBytes(UTF8),
-                "85255".getBytes(UTF8), clock);
+        Column cambriaNameCol = new Column(bytes("name"),
+                bytes("Cambria Suites Hayden"), ts);
+        Column cambriaPhoneCol = new Column(bytes("phone"),
+                bytes("480-444-4444"), ts);
+        Column cambriaAddressCol = new Column(bytes("address"),
+                bytes("400 N. Hayden"), ts);
+        Column cambriaCityCol = new Column(bytes("city"), bytes("Scottsdale"),
+                ts);
+        Column cambriaStateCol = new Column(bytes("state"), bytes("AZ"), ts);
+        Column cambriaZipCol = new Column(bytes("zip"), bytes("85255"), ts);
 
         ColumnOrSuperColumn nameCosc = new ColumnOrSuperColumn();
         nameCosc.column = cambriaNameCol;
@@ -602,7 +582,7 @@ public class Prepopulate {
         zipMut.column_or_supercolumn = zipCosc;
 
         // set up the batch
-        Map<byte[], Map<String, List<Mutation>>> cambriaMutationMap = new HashMap<byte[], Map<String, List<Mutation>>>();
+        Map<ByteBuffer, Map<String, List<Mutation>>> cambriaMutationMap = new HashMap<ByteBuffer, Map<String, List<Mutation>>>();
 
         Map<String, List<Mutation>> cambriaMuts = new HashMap<String, List<Mutation>>();
         List<Mutation> cambriaCols = new ArrayList<Mutation>();
@@ -617,7 +597,7 @@ public class Prepopulate {
 
         // outer map key is a row key
         // inner map key is the column family name
-        cambriaMutationMap.put(cambriaKey.getBytes(), cambriaMuts);
+        cambriaMutationMap.put(bytes(cambriaKey), cambriaMuts);
         return cambriaMutationMap;
     }
 }

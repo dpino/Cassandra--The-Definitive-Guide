@@ -14,6 +14,14 @@ import org.apache.cassandra.thrift.UnavailableException;
 import org.apache.thrift.TException;
 
 /**
+ * OUPUT:
+ *
+ * Defining new keyspace.
+ * Defining new cf.
+ * All done.
+ */
+
+/**
  * Shows how to define a keyspace and CF programmatically.
  */
 public class DefineKeyspaceExample {
@@ -30,7 +38,7 @@ public class DefineKeyspaceExample {
         KsDef ksdef = new KsDef();
         ksdef.name = "ProgKS";
         ksdef.replication_factor = 1;
-        ksdef.strategy_class = "org.apache.cassandra.locator.RackUnawareStrategy";
+        ksdef.strategy_class = "org.apache.cassandra.locator.SimpleStrategy";
 
         List<CfDef> cfdefs = new ArrayList<CfDef>();
         CfDef cfdef1 = new CfDef();
@@ -40,7 +48,12 @@ public class DefineKeyspaceExample {
 
         ksdef.cf_defs = cfdefs;
 
-        client.system_add_keyspace(ksdef);
+        try {
+            client.system_add_keyspace(ksdef);
+        } catch (InvalidRequestException e) {
+            System.out.println("Error: " + e.getWhy());
+            return;
+        }
 
         System.out.println("Defining new cf.");
         CfDef cfdef2 = new CfDef();

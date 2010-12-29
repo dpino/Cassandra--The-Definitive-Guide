@@ -1,5 +1,8 @@
 package com.cassandraguide.rw;
 
+import static org.apache.cassandra.utils.ByteBufferUtil.bytes;
+
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,7 +14,19 @@ import org.apache.cassandra.thrift.ConsistencyLevel;
 import org.apache.cassandra.thrift.KeyRange;
 import org.apache.cassandra.thrift.KeySlice;
 import org.apache.cassandra.thrift.SlicePredicate;
+import org.apache.cassandra.utils.ByteBufferUtil;
 
+/**
+ * OUTPUT:
+ *
+ * Getting Range Slices.
+ * Current row: k2
+ * All done.
+ */
+
+/**
+ *
+ */
 public class GetRangeSliceExample {
 
     public static void main(String[] args) throws Exception {
@@ -21,16 +36,16 @@ public class GetRangeSliceExample {
         System.out.println("Getting Range Slices.");
 
         SlicePredicate predicate = new SlicePredicate();
-        List<byte[]> colNames = new ArrayList<byte[]>();
-        colNames.add("a".getBytes());
-        colNames.add("b".getBytes());
+        List<ByteBuffer> colNames = new ArrayList<ByteBuffer>();
+        colNames.add(bytes("a"));
+        colNames.add(bytes("b"));
         predicate.column_names = colNames;
 
         ColumnParent parent = new ColumnParent("Standard1");
 
         KeyRange keyRange = new KeyRange();
-        keyRange.start_key = "k1".getBytes();
-        keyRange.end_key = "k2".getBytes();
+        keyRange.start_key = bytes("k1");
+        keyRange.end_key = bytes("k2");
 
         // a key slice is returned
         List<KeySlice> results = client.get_range_slices(parent, predicate,
@@ -43,8 +58,8 @@ public class GetRangeSliceExample {
 
             for (int i = 0; i < cosc.size(); i++) {
                 Column c = cosc.get(i).getColumn();
-                System.out.println(new String(c.name, "UTF-8") + " : "
-                        + new String(c.value, "UTF-8"));
+                System.out.println(ByteBufferUtil.string(c.name) + " : "
+                        + ByteBufferUtil.string(c.value));
             }
         }
 

@@ -1,6 +1,9 @@
 package com.cassandraguide.rw;
 
+import static org.apache.cassandra.utils.ByteBufferUtil.bytes;
+
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
 import java.util.List;
 
 import org.apache.cassandra.thrift.Cassandra;
@@ -15,6 +18,7 @@ import org.apache.cassandra.thrift.SlicePredicate;
 import org.apache.cassandra.thrift.SliceRange;
 import org.apache.cassandra.thrift.TimedOutException;
 import org.apache.cassandra.thrift.UnavailableException;
+import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.log4j.Logger;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
@@ -23,6 +27,24 @@ import org.apache.thrift.transport.TFramedTransport;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
 
+/**
+ * OUTPUT:
+ *
+ * DEBUG 20:51:45,969 Inserting row for key 1
+ * DEBUG 20:51:45,980 Row insert done.
+ * DEBUG 20:51:45,980 Reading Name Column:
+ * DEBUG 20:51:45,988 Column name: name
+ * DEBUG 20:51:45,988 Column value: George Clinton
+ * DEBUG 20:51:45,989 Column timestamp: 1293565905967
+ * DEBUG 20:51:45,993 Complete Row:
+ * DEBUG 20:51:46,003 age : 69
+ * DEBUG 20:51:46,006 name : George Clinton
+ * DEBUG 20:51:46,006 All done.
+ */
+
+/**
+ *
+ */
 public class SimpleWriteRead {
 
     private static final Logger LOG = Logger.getLogger(SimpleWriteRead.class);
@@ -47,20 +69,20 @@ public class SimpleWriteRead {
         client.set_keyspace("Keyspace1");
 
         String cfName = "Standard1";
-        byte[] userIDKey = "1".getBytes(); // this is a row key
+        ByteBuffer userIDKey = bytes("1"); // this is a row key
 
-        Clock clock = new Clock(System.currentTimeMillis());
+        long ts = System.currentTimeMillis();
 
         ColumnParent cp = new ColumnParent(cfName);
 
         // insert the name column
-        LOG.debug("Inserting row for key " + new String(userIDKey));
-        client.insert(userIDKey, cp, new Column("name".getBytes(UTF8),
-                "George Clinton".getBytes(), clock), CL);
+        LOG.debug("Inserting row for key " + ByteBufferUtil.string(userIDKey));
+        client.insert(userIDKey, cp, new Column(bytes("name"),
+                bytes("George Clinton"), ts), CL);
 
         // insert the Age column
-        client.insert(userIDKey, cp,
-                new Column("age".getBytes(UTF8), "69".getBytes(), clock), CL);
+        client.insert(userIDKey, cp, new Column(bytes("age"), bytes("69"), ts),
+                CL);
 
         LOG.debug("Row insert done.");
 
@@ -72,9 +94,9 @@ public class SimpleWriteRead {
         colPathName.setColumn("name".getBytes(UTF8));
         Column col = client.get(userIDKey, colPathName, CL).getColumn();
 
-        LOG.debug("Column name: " + new String(col.name, UTF8));
-        LOG.debug("Column value: " + new String(col.value, UTF8));
-        LOG.debug("Column timestamp: " + col.clock.timestamp);
+        LOG.debug("Column name: " + ByteBufferUtil.string(col.name));
+        LOG.debug("Column value: " + ByteBufferUtil.string(col.value));
+        LOG.debug("Column timestamp: " + col.timestamp);
 
         // create a slice predicate representing the columns to read
         // start and finish are the range of columns--here, all
@@ -93,8 +115,8 @@ public class SimpleWriteRead {
         // loop over columns, outputting values
         for (ColumnOrSuperColumn result : results) {
             Column column = result.column;
-            LOG.debug(new String(column.name, UTF8) + " : "
-                    + new String(column.value, UTF8));
+            LOG.debug(ByteBufferUtil.string(column.name) + " : "
+                    + ByteBufferUtil.string(column.value));
         }
         tf.close();
 

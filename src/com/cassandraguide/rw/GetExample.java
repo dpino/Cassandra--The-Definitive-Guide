@@ -1,6 +1,9 @@
 package com.cassandraguide.rw;
 
+import static org.apache.cassandra.utils.ByteBufferUtil.bytes;
+
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
 
 import org.apache.cassandra.thrift.Cassandra;
 import org.apache.cassandra.thrift.Column;
@@ -12,6 +15,7 @@ import org.apache.cassandra.thrift.InvalidRequestException;
 import org.apache.cassandra.thrift.NotFoundException;
 import org.apache.cassandra.thrift.TimedOutException;
 import org.apache.cassandra.thrift.UnavailableException;
+import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.log4j.Logger;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
@@ -20,6 +24,20 @@ import org.apache.thrift.transport.TFramedTransport;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
 
+/**
+ * OUTPUT:
+ *
+ * DEBUG 20:45:00,523 Inserting row for key 1
+ * DEBUG 20:45:00,533 Row insert done.
+ * DEBUG 20:45:00,533 Get result:
+ * DEBUG 20:45:00,547 name : George Clinton
+ * DEBUG 20:45:00,547 All done.
+ *
+ */
+
+/**
+ *
+ */
 public class GetExample {
 
     private static final Logger LOG = Logger.getLogger(GetExample.class);
@@ -42,17 +60,17 @@ public class GetExample {
         client.set_keyspace("Keyspace1");
 
         String cfName = "Standard1";
-        byte[] userIDKey = "1".getBytes(); // this is the row key
+        ByteBuffer userIDKey = bytes("1"); // this is the row key
 
-        Clock clock = new Clock(System.currentTimeMillis());
+        long ts = System.currentTimeMillis();
 
         // create a representation of the Name column
         ColumnParent cp = new ColumnParent(cfName);
 
         // insert the name column
-        LOG.debug("Inserting row for key " + new String(userIDKey));
-        client.insert(userIDKey, cp, new Column("name".getBytes(UTF8),
-                "George Clinton".getBytes(), clock), CL);
+        LOG.debug("Inserting row for key " + ByteBufferUtil.string(userIDKey));
+        client.insert(userIDKey, cp, new Column(bytes("name"),
+                bytes("George Clinton"), ts), CL);
 
         LOG.debug("Row insert done.");
 
@@ -62,14 +80,12 @@ public class GetExample {
         // read all columns in the row
         ColumnPath path = new ColumnPath();
         path.column_family = cfName;
-        path.column = "name".getBytes();
+        path.column = bytes("name");
 
         ColumnOrSuperColumn cosc = client.get(userIDKey, path, CL);
         Column column = cosc.column;
-        LOG.debug(new String(column.name, UTF8) + " : "
-                + new String(column.value, UTF8));
-        // END GET
-
+        LOG.debug(ByteBufferUtil.string(column.name) + " : "
+                + ByteBufferUtil.string(column.value));
         tr.close();
 
         LOG.debug("All done.");

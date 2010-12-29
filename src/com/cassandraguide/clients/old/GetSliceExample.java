@@ -1,6 +1,7 @@
 package com.cassandraguide.clients.old;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,12 +15,17 @@ import org.apache.cassandra.thrift.NotFoundException;
 import org.apache.cassandra.thrift.SlicePredicate;
 import org.apache.cassandra.thrift.TimedOutException;
 import org.apache.cassandra.thrift.UnavailableException;
+import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.log4j.Logger;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
+
+/**
+ * FIXME: Not working
+ */
 
 /**
  * Shows how to use get_slice. Assumes we've done this: cassandra> set
@@ -46,27 +52,26 @@ public class GetSliceExample {
             InvalidRequestException, UnavailableException, TimedOutException,
             TException, NotFoundException {
 
+        SlicePredicate predicate = new SlicePredicate();
+        List<ByteBuffer> colNames = new ArrayList<ByteBuffer>();
+        colNames.add(ByteBufferUtil.bytes("name"));
+        colNames.add(ByteBufferUtil.bytes("instrument"));
+        predicate.column_names = colNames;
+
         TTransport tr = new TSocket(HOST, PORT);
         TProtocol proto = new TBinaryProtocol(tr);
         Cassandra.Client client = new Cassandra.Client(proto);
         tr.open();
 
-        SlicePredicate predicate = new SlicePredicate();
-        List<byte[]> colNames = new ArrayList<byte[]>();
-        colNames.add("name".getBytes());
-        colNames.add("instrument".getBytes());
-        predicate.column_names = colNames;
-
         ColumnParent parent = new ColumnParent(columnFamily);
-
-        String key = "bootsy";
+        ByteBuffer key = ByteBufferUtil.bytes("bootsy");
         List<ColumnOrSuperColumn> results = client.get_slice(key, parent,
                 predicate, CL);
 
         for (ColumnOrSuperColumn cosc : results) {
             Column c = cosc.column;
-            LOG.debug(new String(c.name, UTF8) + " : "
-                    + new String(c.value, UTF8));
+            LOG.debug(new String(c.name.array(), UTF8) + " : "
+                    + new String(c.value.array(), UTF8));
         }
 
         tr.close();

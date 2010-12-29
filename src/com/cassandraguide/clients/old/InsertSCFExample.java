@@ -1,7 +1,11 @@
 package com.cassandraguide.clients.old;
 
+import static org.apache.cassandra.utils.ByteBufferUtil.bytes;
+
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +15,7 @@ import org.apache.cassandra.thrift.Column;
 import org.apache.cassandra.thrift.ColumnOrSuperColumn;
 import org.apache.cassandra.thrift.ConsistencyLevel;
 import org.apache.cassandra.thrift.InvalidRequestException;
+import org.apache.cassandra.thrift.Mutation;
 import org.apache.cassandra.thrift.NotFoundException;
 import org.apache.cassandra.thrift.SuperColumn;
 import org.apache.cassandra.thrift.TimedOutException;
@@ -21,6 +26,10 @@ import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
+
+/**
+ * FIXME: Not working
+ */
 
 /**
  * Uses a SuperColumn Family. Uses a SCF called Hotel, with row keys for each
@@ -61,19 +70,19 @@ public class InsertSCFExample {
         long ts = System.currentTimeMillis();
 
         // set up columns for Clarion
-        Column clarionNameCol = new Column("name".getBytes(UTF8),
-                "Clarion SF".getBytes("UTF-8"), ts);
-        Column clarionAddressCol = new Column("address".getBytes(UTF8),
-                "123 Market St., SF".getBytes(UTF8), ts);
-        Column clarionPhoneCol = new Column("phone".getBytes(UTF8),
-                "415-555-1000".getBytes(UTF8), ts);
+        Column clarionNameCol = new Column(bytes("name"), bytes("Clarion SF"),
+                ts);
+        Column clarionAddressCol = new Column(bytes("address"),
+                bytes("123 Market St., SF"), ts);
+        Column clarionPhoneCol = new Column(bytes("phone"),
+                bytes("415-555-1000"), ts);
 
         cols.add(clarionNameCol);
         cols.add(clarionAddressCol);
         cols.add(clarionPhoneCol);
 
         // create the supercolumn
-        SuperColumn clarionSC = new SuperColumn("Clarion".getBytes(UTF8), cols);
+        SuperColumn clarionSC = new SuperColumn(bytes("Clarion"), cols);
 
         ColumnOrSuperColumn superCol = new ColumnOrSuperColumn();
         superCol.setSuper_column(clarionSC);
@@ -83,8 +92,13 @@ public class InsertSCFExample {
 
         dataMap.put(SUPERCF_NAME, row);
 
-        // insert the first hotel
-        client.batch_insert(keyspace, "Clarion_123", dataMap, CL);
+        Map<ByteBuffer, Map<String, List<Mutation>>> mutationMap = new HashMap<ByteBuffer, Map<String, List<Mutation>>>();
+        mutationMap
+                .put(bytes(keyspace),
+                        createMutationMap(SUPERCF_NAME,
+                                createMutationList(Collections
+                                        .singletonList(superCol))));
+        client.batch_mutate(mutationMap, CL);
 
         LOG.debug("Inserted first row.");
 
@@ -92,12 +106,12 @@ public class InsertSCFExample {
         // subcolumns
 
         // set up columns for Comfort
-        Column comfortNameCol = new Column("name".getBytes(UTF8),
-                "Comfort Midtwown".getBytes(UTF8), ts);
-        Column comfortAddressCol = new Column("address".getBytes(UTF8),
-                "57th Street, NYC".getBytes(UTF8), ts);
-        Column comfortPhoneCol = new Column("phone".getBytes(UTF8),
-                "212-555-1000".getBytes(UTF8), ts);
+        Column comfortNameCol = new Column(bytes("name"),
+                bytes("Comfort Midtwown"), ts);
+        Column comfortAddressCol = new Column(bytes("address"),
+                bytes("57th Street, NYC"), ts);
+        Column comfortPhoneCol = new Column(bytes("phone"),
+                bytes("212-555-1000"), ts);
 
         // set up to reuse
         cols.clear();
@@ -106,7 +120,7 @@ public class InsertSCFExample {
         cols.add(comfortPhoneCol);
 
         // create the supercolumn
-        SuperColumn comfortSC = new SuperColumn("Comfort".getBytes(UTF8), cols);
+        SuperColumn comfortSC = new SuperColumn(bytes("Comfort"), cols);
 
         ColumnOrSuperColumn superCol2 = new ColumnOrSuperColumn();
         superCol2.setSuper_column(comfortSC);
@@ -118,7 +132,13 @@ public class InsertSCFExample {
         String comfortRowKey = "Comfort_789";
 
         // insert the second hotel
-        client.batch_insert(keyspace, comfortRowKey, dataMap, CL);
+        mutationMap.clear();
+        mutationMap
+                .put(bytes(keyspace),
+                        createMutationMap(SUPERCF_NAME,
+                                createMutationList(Collections
+                                        .singletonList(superCol2))));
+        client.batch_mutate(mutationMap, CL);
 
         LOG.debug("Inserted second row.");
 
@@ -128,4 +148,23 @@ public class InsertSCFExample {
 
         LOG.debug("All done.");
     }
+
+    private static List<Mutation> createMutationList(
+            List<ColumnOrSuperColumn> columns) {
+        List<Mutation> result = new ArrayList<Mutation>();
+        for (ColumnOrSuperColumn each : columns) {
+            Mutation mutation = new Mutation();
+            mutation.setColumn_or_supercolumn(each);
+            result.add(mutation);
+        }
+        return result;
+    }
+
+    private static Map<String, List<Mutation>> createMutationMap(String cfName,
+            List<Mutation> mutations) {
+        Map<String, List<Mutation>> result = new HashMap<String, List<Mutation>>();
+        result.put(cfName, mutations);
+        return result;
+    }
+
 }

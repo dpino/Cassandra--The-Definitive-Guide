@@ -1,5 +1,7 @@
 package com.cassandraguide.clients.old;
 
+import static org.apache.cassandra.utils.ByteBufferUtil.bytes;
+
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -11,6 +13,13 @@ import org.apache.cassandra.thrift.ColumnPath;
 import org.apache.cassandra.thrift.ConsistencyLevel;
 import org.apache.log4j.Logger;
 
+/**
+ * FIXME: Not working
+ */
+
+/**
+ *
+ */
 public class WriteClient {
     private static final Logger LOG = Logger.getLogger(WriteClient.class);
 
@@ -41,17 +50,15 @@ public class WriteClient {
 
         // write
         for (int i = 0; i < 10; i++) {
-            RowMutation row = new RowMutation("Keyspace1", "key" + i);
+            RowMutation row = new RowMutation("Keyspace1", bytes("key" + i));
             ColumnPath cp = new ColumnPath("Standard2").setColumn(("mycol")
                     .getBytes());
 
-            row.add(new QueryPath(cp), ("value" + i).getBytes(),
+            row.add(new QueryPath(cp), bytes("value" + i),
                     System.currentTimeMillis());
 
             try {
-                StorageProxy.mutateBlocking(Arrays.asList(row),
-                        ConsistencyLevel.ONE);
-
+                StorageProxy.mutate(Arrays.asList(row), ConsistencyLevel.ONE);
                 Thread.sleep(50L);
             } catch (Exception ex) {
                 throw new AssertionError(ex);

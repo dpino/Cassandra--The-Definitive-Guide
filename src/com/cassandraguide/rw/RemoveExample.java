@@ -1,9 +1,24 @@
 package com.cassandraguide.rw;
 
+import static org.apache.cassandra.utils.ByteBufferUtil.bytes;
+
+import java.nio.ByteBuffer;
+
 import org.apache.cassandra.thrift.Cassandra;
 import org.apache.cassandra.thrift.ColumnPath;
 import org.apache.cassandra.thrift.ConsistencyLevel;
 
+/**
+ * OUTPUT:
+ *
+ * Running remove.
+ * Remove done.
+ * All done
+ */
+
+/**
+ *
+ */
 public class RemoveExample {
 
     public static void main(String[] args) throws Exception {
@@ -14,15 +29,15 @@ public class RemoveExample {
         Cassandra.Client client = conn.connect();
 
         String columnFamily = "Standard1";
-        byte[] key = "k2".getBytes(); // this is the row key
+        ByteBuffer key = bytes("k2"); // this is the row key
 
-        Clock clock = new Clock(System.currentTimeMillis());
+        long ts = System.currentTimeMillis();
 
         ColumnPath colPath = new ColumnPath();
         colPath.column_family = columnFamily;
-        colPath.column = "b".getBytes();
+        colPath.column = bytes("b");
 
-        client.remove(key, colPath, clock, ConsistencyLevel.ALL);
+        client.remove(key, colPath, ts, ConsistencyLevel.ALL);
 
         System.out.println("Remove done.");
 

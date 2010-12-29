@@ -15,6 +15,7 @@ import org.apache.cassandra.thrift.SlicePredicate;
 import org.apache.cassandra.thrift.SliceRange;
 import org.apache.cassandra.thrift.TimedOutException;
 import org.apache.cassandra.thrift.UnavailableException;
+import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.log4j.Logger;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
@@ -22,6 +23,13 @@ import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
 
+/**
+ * FIXME: Not working
+ */
+
+/**
+ *
+ */
 public class GetFromSCExample {
 
     private static final Logger LOG = Logger.getLogger(GetFromSCExample.class);
@@ -51,22 +59,23 @@ public class GetFromSCExample {
 
         // read all columns in the row
         ColumnParent parent = new ColumnParent(sc);
-        parent.super_column = "Clarion".getBytes();
+        parent.super_column = ByteBufferUtil.bytes("Clarion");
 
         KeyRange keyRange = new KeyRange();
-        keyRange.setStart_key("");
-        keyRange.setEnd_key("");
+        keyRange.setStart_key("".getBytes());
+        keyRange.setEnd_key("".getBytes());
         keyRange.count = 5;
 
-        List<KeySlice> keySlices = client.get_range_slices(keyspace, parent,
-                predicate, keyRange, ConsistencyLevel.ONE);
+        client.set_keyspace(keyspace);
+        List<KeySlice> keySlices = client.get_range_slices(parent, predicate,
+                keyRange, ConsistencyLevel.ONE);
 
         for (KeySlice ks : keySlices) {
             List<ColumnOrSuperColumn> coscs = ks.columns;
             LOG.debug(new String("Key: " + ks.key + " -> "));
             for (ColumnOrSuperColumn cs : coscs) {
-                LOG.debug(new String(cs.column.name, UTF8) + " : "
-                        + new String(cs.column.value, UTF8));
+                LOG.debug(new String(cs.column.name.array(), UTF8) + " : "
+                        + new String(cs.column.value.array(), UTF8));
             }
 
         }

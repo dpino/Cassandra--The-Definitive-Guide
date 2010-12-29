@@ -2,6 +2,7 @@ package com.cassandraguide.hotel;
 
 import static com.cassandraguide.hotel.Constants.CL;
 import static com.cassandraguide.hotel.Constants.UTF8;
+import static org.apache.cassandra.utils.ByteBufferUtil.bytes;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +16,57 @@ import org.apache.cassandra.thrift.KeySlice;
 import org.apache.cassandra.thrift.SlicePredicate;
 import org.apache.cassandra.thrift.SliceRange;
 import org.apache.cassandra.thrift.SuperColumn;
+import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.log4j.Logger;
+
+/*
+ * NOTE: Create keyspace "Hotelier" before running HotelApp
+ *
+ * [default@unknown] create keyspace Hotelier;
+ *
+ */
+
+/**
+ * OUPUT:
+ *
+ * DEBUG 20:25:23,282 Inserted AZC_043
+ * DEBUG 20:25:23,286 Inserted AZS_011
+ * DEBUG 20:25:23,288 Inserted CAS_021
+ * DEBUG 20:25:23,289 Inserted NYN_042
+ * DEBUG 20:25:23,291 Done inserting at 2046829587193
+ * DEBUG 20:25:23,299 Inserted HotelByCity index for Cambria Suites Hayden
+ * DEBUG 20:25:23,301 Inserted HotelByCity index for Clarion Scottsdale Peak
+ * DEBUG 20:25:23,302 Inserted HotelByCity index for The W SF
+ * DEBUG 20:25:23,307 Inserted HotelByCity index for The Waldorf=Astoria
+ * DEBUG 20:25:23,307 Inserting POIs.
+ * DEBUG 20:25:23,310 Done inserting Empire State.
+ * DEBUG 20:25:23,312 Done inserting Central Park.
+ * DEBUG 20:25:23,314 Done inserting Phoenix Zoo.
+ * DEBUG 20:25:23,315 Done inserting Spring Training.
+ * DEBUG 20:25:23,316 Done inserting POIs.
+ * DEBUG 20:25:23,316 ** Database filled. **
+ * DEBUG 20:25:23,318 ** Starting hotel reservation app. **
+ * DEBUG 20:25:23,318 Seaching for hotels in Scottsdale, AZ
+ * DEBUG 20:25:23,335 Using key java.nio.HeapByteBuffer[pos=43 lim=56 cap=316]
+ * DEBUG 20:25:23,335 Found hotel result for Cambria Suites Hayden
+ * DEBUG 20:25:23,335 Found hotel result for Clarion Scottsdale Peak
+ * DEBUG 20:25:23,336 Using key java.nio.HeapByteBuffer[pos=176 lim=187 cap=316]
+ * DEBUG 20:25:23,336 Found hotel result for The Waldorf=Astoria
+ * DEBUG 20:25:23,336 Using key java.nio.HeapByteBuffer[pos=252 lim=268 cap=316]
+ * DEBUG 20:25:23,336 Found hotel result for The W SF
+ * DEBUG 20:25:23,336 Found hotels in city. Results: 4
+ * DEBUG 20:25:23,337 You picked Cambria Suites Hayden
+ * DEBUG 20:25:23,337 Finding Points of Interest near Cambria Suites Hayden
+ * DEBUG 20:25:23,340 Found something neat nearby: Phoenix Zoo.
+ * Desc: null.
+ * Phone: null
+ * DEBUG 20:25:23,340 Found something neat nearby: Spring Training.
+ * Desc: null.
+ * Phone: null
+ * DEBUG 20:25:23,340 Hm... Phoenix Zoo. null--Sounds fun!
+ * DEBUG 20:25:23,340 Now to book a room...
+ * DEBUG 20:25:23,341 All done.
+ */
 
 /**
  * Runs the hotel application. After the database is pre-populated, this class
@@ -58,8 +109,10 @@ public class HotelApp {
         List<POI> points = app.findPOIByHotel(h.name);
 
         // choose one
-        POI poi = points.get(0);
-        LOG.debug("Hm... " + poi.name + ". " + poi.desc + "--Sounds fun!");
+        if (!points.isEmpty()) {
+            POI poi = points.get(0);
+            LOG.debug("Hm... " + poi.name + ". " + poi.desc + "--Sounds fun!");
+        }
 
         LOG.debug("Now to book a room...");
 
@@ -87,8 +140,8 @@ public class HotelApp {
         ColumnParent parent = new ColumnParent(scFamily);
 
         KeyRange keyRange = new KeyRange();
-        keyRange.start_key = "".getBytes();
-        keyRange.end_key = "".getBytes();
+        keyRange.start_key = bytes("");
+        keyRange.end_key = bytes("");
 
         List<POI> pois = new ArrayList<POI>();
 
@@ -104,7 +157,7 @@ public class HotelApp {
             List<ColumnOrSuperColumn> cols = slice.columns;
 
             POI poi = new POI();
-            poi.name = new String(slice.key);
+            poi.name = new String(ByteBufferUtil.string(slice.key));
 
             for (ColumnOrSuperColumn cosc : cols) {
                 SuperColumn sc = cosc.super_column;
@@ -112,12 +165,12 @@ public class HotelApp {
                 List<Column> colsInSc = sc.columns;
 
                 for (Column c : colsInSc) {
-                    String colName = new String(c.name, UTF8);
+                    String colName = new String(c.name.array(), UTF8);
                     if (colName.equals("desc")) {
-                        poi.desc = new String(c.value, UTF8);
+                        poi.desc = new String(c.value.array(), UTF8);
                     }
                     if (colName.equals("phone")) {
-                        poi.phone = new String(c.value, UTF8);
+                        poi.phone = new String(c.value.array(), UTF8);
                     }
                 }
 
@@ -152,7 +205,7 @@ public class HotelApp {
 
         KeyRange keyRange = new KeyRange();
         keyRange.setStart_key(key.getBytes());
-        keyRange.setEnd_key((key + 1).getBytes()); // just outside lexical range
+        keyRange.setEnd_key("".getBytes()); // just outside lexical range
         keyRange.count = 5;
 
         Connector cl = new Connector();
@@ -169,7 +222,7 @@ public class HotelApp {
             for (ColumnOrSuperColumn cs : coscs) {
 
                 Hotel hotel = new Hotel();
-                hotel.name = new String(cs.column.name, UTF8);
+                hotel.name = ByteBufferUtil.string(cs.column.name);
                 hotel.city = city;
                 hotel.state = state;
 
