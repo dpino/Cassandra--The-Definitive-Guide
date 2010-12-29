@@ -12,22 +12,22 @@ import org.apache.thrift.transport.TTransportException;
 
 //simple convenience class to wrap connections, just to reduce repeat code
 public class Connector {
-	
-	TTransport tr = new TSocket("localhost", 9160);
-	
-	// returns a new connection to our keyspace
-	public Cassandra.Client connect() throws TTransportException,
-			TException, InvalidRequestException {
 
-		TFramedTransport tf = new TFramedTransport(tr);
-		TProtocol proto = new TBinaryProtocol(tf);
-		Cassandra.Client client = new Cassandra.Client(proto);
-		tr.open();
-		client.set_keyspace("Keyspace1");
-		return client;
-	}
-	
-	public void close() {
-		tr.close();
-	}
+    TTransport tr = new TSocket("localhost", 9160);
+
+    // returns a new connection to our keyspace
+    public Cassandra.Client connect() throws TTransportException, TException,
+            InvalidRequestException {
+
+        TFramedTransport tf = new TFramedTransport(tr);
+        TProtocol proto = new TBinaryProtocol(tf);
+        Cassandra.Client client = new Cassandra.Client(proto);
+        tr.open();
+        client.set_keyspace("Keyspace1");
+        return client;
+    }
+
+    public void close() {
+        tr.close();
+    }
 }

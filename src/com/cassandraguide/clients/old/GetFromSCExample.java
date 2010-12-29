@@ -24,56 +24,55 @@ import org.apache.thrift.transport.TTransport;
 
 public class GetFromSCExample {
 
-	private static final Logger LOG = Logger.getLogger(GetFromSCExample.class);
-	
-	private static final String UTF8 = "UTF8";
-	private static final String HOST = "localhost";
-	private static final int PORT = 9160;
+    private static final Logger LOG = Logger.getLogger(GetFromSCExample.class);
 
-	public static void main(String[] args) throws UnsupportedEncodingException,
-			InvalidRequestException, UnavailableException, TimedOutException,
-			TException, NotFoundException {
+    private static final String UTF8 = "UTF8";
+    private static final String HOST = "localhost";
+    private static final int PORT = 9160;
 
-		TTransport tr = new TSocket(HOST, PORT);
-		TProtocol proto = new TBinaryProtocol(tr);
-		Cassandra.Client client = new Cassandra.Client(proto);
-		tr.open();
+    public static void main(String[] args) throws UnsupportedEncodingException,
+            InvalidRequestException, UnavailableException, TimedOutException,
+            TException, NotFoundException {
 
-		String keyspace = "Keyspace1";
-		String sc = "Hotel";
-		//create a slice predicate representing the columns to read
-		//start and finish are the range of columns--here, all
-		SlicePredicate predicate = new SlicePredicate();
-		SliceRange sliceRange = new SliceRange();
-		sliceRange.setStart(new byte[0]);
-		sliceRange.setFinish(new byte[0]);
-		predicate.setSlice_range(sliceRange);
+        TTransport tr = new TSocket(HOST, PORT);
+        TProtocol proto = new TBinaryProtocol(tr);
+        Cassandra.Client client = new Cassandra.Client(proto);
+        tr.open();
 
-		// read all columns in the row
-		ColumnParent parent = new ColumnParent(sc);
-		parent.super_column = "Clarion".getBytes();
+        String keyspace = "Keyspace1";
+        String sc = "Hotel";
+        // create a slice predicate representing the columns to read
+        // start and finish are the range of columns--here, all
+        SlicePredicate predicate = new SlicePredicate();
+        SliceRange sliceRange = new SliceRange();
+        sliceRange.setStart(new byte[0]);
+        sliceRange.setFinish(new byte[0]);
+        predicate.setSlice_range(sliceRange);
 
-		KeyRange keyRange = new KeyRange();
-		keyRange.setStart_key("");
-		keyRange.setEnd_key("");
-		keyRange.count = 5;
-		
-		List<KeySlice> keySlices = 
-			client.get_range_slices(keyspace, parent, predicate, keyRange, 
-					ConsistencyLevel.ONE);
-		
-		for (KeySlice ks : keySlices) {
-			List<ColumnOrSuperColumn> coscs = ks.columns;
-			LOG.debug(new String("Key: " + ks.key + " -> "));
-			for (ColumnOrSuperColumn cs : coscs) {				
-				LOG.debug(new String(cs.column.name, UTF8) + " : "
-						+ new String(cs.column.value, UTF8));
-			}
-			
-		}
-		
-		tr.close();
-		
-		LOG.debug("All done.");
-	}
+        // read all columns in the row
+        ColumnParent parent = new ColumnParent(sc);
+        parent.super_column = "Clarion".getBytes();
+
+        KeyRange keyRange = new KeyRange();
+        keyRange.setStart_key("");
+        keyRange.setEnd_key("");
+        keyRange.count = 5;
+
+        List<KeySlice> keySlices = client.get_range_slices(keyspace, parent,
+                predicate, keyRange, ConsistencyLevel.ONE);
+
+        for (KeySlice ks : keySlices) {
+            List<ColumnOrSuperColumn> coscs = ks.columns;
+            LOG.debug(new String("Key: " + ks.key + " -> "));
+            for (ColumnOrSuperColumn cs : coscs) {
+                LOG.debug(new String(cs.column.name, UTF8) + " : "
+                        + new String(cs.column.value, UTF8));
+            }
+
+        }
+
+        tr.close();
+
+        LOG.debug("All done.");
+    }
 }
